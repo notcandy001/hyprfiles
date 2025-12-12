@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ---------------- USER SETTINGS (edit to match your system) ----------------
+MATUGEN="$(command -v matugen || true)"                 # path to matugen
+SWWW="$(command -v swww || true)"                       # path to swww
+WAYBAR_BIN="$(command -v waybar || true)"
+HYPRCTL="$(command -v hyprctl || true)"                 # hyprctl for Hyprland reload
+NOTIFY="$(command -v notify-send || true)"
+
+# Where matugen config lives (full path)
+MATUGEN_CONFIG="$HOME/.config/matugen/matugen.toml"
+
+# Files matugen should produce (your waybar/rofi/hypr config should import/use these)
+WAYBAR_COLORS="$HOME/.config/waybar/colors.css"
+ROFI_THEME="$HOME/.config/rofi/colors.rasi"
+HYPR_COLORS="$HOME/.config/hypr/colors.conf"            # example: your hyprland include file
+HYPRLOCK_COLORS="$HOME/.config/hypr/colors.conf"
+# Logging
+LOG_DIR="/tmp/walset-backend-logs"
+mkdir -p "$LOG_DIR"
+MATUGEN_STDERR="$LOG_DIR/matugen.err"
+
+# --------------------------------------------------------------------------
+
+if [ "$#" -ne 1 ]; then
+  echo "Usage: $0 /path/to/image" >&2
+  exit 1
+fi
+
+IMAGE="$1"
+
+# basic checks
+if [ -z "$MATUGEN" ] || [ ! -x "$MATUGEN" ]; then
+  echo "matugen not found - please install or adjust MATUGEN path" >&2
+  exit 1
+fi
+if [ -z "$SWWW" ] || [ ! -x "$SWWW" ]; then
+  echo "swww not found - please install or adjust SWWW path" >&2
+  exit 1
+fi
+if [ ! -f "$MATUGEN_CONFIG" ]; then
+  echo "matugen config not found at $MATUGEN_CONFIG" >&2
+  exit 1
+fi
+
+# notify start
+[ -n "$NOTIFY" ] && "$NOTIFY" "Changing Theme" "Applying wallpaper and generating colors..."
+
+# set wallpaper (swww)
+if ! "$SWWW" img "$IMAGE" --transition-type center --transition-step 255 --transition-fps 60 >/dev/null 2>>"$LOG_DIR/swww.err"; then
+  echo "Warning: swww returned non-zero; see $LOG_DIR/swww.err" >&2
+fi
+
+# Run matugen properly:
+# Option A: If your matugen config has templates that write files (recommended)
+#    simply call: matugen image "$IMAGE" -c "$MATUGEN_CONFIG"
+# Option B: If you want matugen output to stdout and capture it into a single file:
+#    matugen image "$IMAGE" --some-output-format > "$OUTFILE"
+#
+# We'll attempt Option A (letting matugen write files per config.toml) first.
+if ! "$MATUGEN" image "$IMAGE" -c "$MATUGEN_CONFIG" -v 2>"$MATUGEN_STDERR"; then
+  # fallback: try to dump JSON (debug) and exit
+  echo "matugen failed; dumping stderr to $MATUGEN_STDERR" >&2
+  [ -n "$NOTIFY" ] && "$NOTIFY" "Matugen failed" "See $MATUGEN_STDERR"
+  cat "$MATUGEN_STDERR" >&2
+  exit 1
+fi
+
+# If you used templates that output to the files above, confirm they exist and are non-empty:
+for f in "$WAYBAR_COLORS" "$ROFI_THEME" "$HYPR_COLORS"; do
+  if [ -f "$f" ] && [ -s "$f" ]; then
+    echo "OK: $f (generated)" >> "$LOG_DIR/run.log"
+  else
+    echo "Note: $f not present or empty (matugen config may not write this file)." >> "$LOG_DIR/run.log"
+  fi
+done
+
+# Reload/notify the programs that rely on these files:
+
+# Waybar: signal reload (SIGUSR2) — Waybar listens for SIGUSR2 to reload config.
+if pgrep -x waybar >/dev/null 2>&1; then
+  pkill -SIGUSR2 waybar || true
+  sleep 0.12
+  # If waybar died for some reason, try restart
+  if ! pgrep -x waybar >/dev/null 2>&1 && [ -n "$WAYBAR_BIN" ] && [ -x "$WAYBAR_BIN" ]; then
+    nohup "$WAYBAR_BIN" >/dev/null 2>&1 &
+  fi
+fi
+
+# Rofi: usually reads theme on startup; kill existing rofi instances so next launch uses the new theme.
+# If you do not want running rofi menus to be killed, comment this out.
+if pgrep -x rofi >/dev/null 2>&1; then
+  pkill -x rofi || true
+fi
+
+# Hyprland: request reload so any include files (colors.conf) get re-parsed
+if [ -n "$HYPRCTL" ] && [ -x "$HYPRCTL" ]; then
+  "$HYPRCTL" reload >/dev/null 2>&1 || true
+fi
+
+[ -n "$NOTIFY" ] && "$NOTIFY" "Theme Applied" "Wallpaper and colors applied from $(basename "$IMAGE")"
+
+exit 0
