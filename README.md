@@ -49,11 +49,13 @@ Simple, organized, and easy to customize.
 ---
 
 ## 📸 Screenshots
+<img width="1366" height="768" alt="2025-12-10_23-12-57" src="https://github.com/user-attachments/assets/8f35dc0e-f37d-4588-9e88-c0dc1b647be8" />
 
-<img width="1366" alt="ss1" src="https://github.com/user-attachments/assets/ac868e98-5851-4bfb-82c9-f3ac482f698d" />
-<img width="1366" alt="ss2" src="https://github.com/user-attachments/assets/49859ad2-ad05-40d7-934b-d82020fe3442" />
-<img width="1366" alt="ss3" src="https://github.com/user-attachments/assets/bc5a6765-9c6b-4729-9966-1e979c8b2884" />
-<img width="1366" alt="ss4" src="https://github.com/user-attachments/assets/ae914cc0-ccc0-46de-b451-ddbcd3821977" />
+<img width="1366" height="768" alt="2025-12-12_22-07-47" src="https://github.com/user-attachments/assets/68618326-2fb1-4829-acdc-a03d374e78f7" />
+
+<img width="1366" height="768" alt="2025-12-12_22-08-04" src="https://github.com/user-attachments/assets/c0294d86-330f-4582-8592-a9f08388b154" />
+
+<img width="1366" height="768" alt="2025-12-12_22-08-04" src="https://github.com/user-attachments/assets/73bbf405-5fb4-4ccf-87fd-c4460a277c82" />
 
 ---
 
