@@ -52,6 +52,10 @@ if ! "$SWWW" img "$IMAGE" --transition-type center --transition-step 255 --trans
   echo "Warning: swww returned non-zero; see $LOG_DIR/swww.err" >&2
 fi
 
+# ALSO apply wallpaper to hyprlock
+cp -f "$IMAGE" "$HOME/.cache/current_wallpaper"
+pkill -USR1 hyprlock 2>/dev/null || true
+
 # Run matugen properly:
 # Option A: If your matugen config has templates that write files (recommended)
 #    simply call: matugen image "$IMAGE" -c "$MATUGEN_CONFIG"
